@@ -11,5 +11,6 @@ https://doi.org/10.1016/j.zool.2020.125800
 
 Update 04th May 2020:
 
-  	The basic script for tracking coordinate export is now online, as well as an exemplary R script to process the data. 
-    We will try to make the video tutorials and benchmark videos available shortly. Currently they should be available as supplementary       files on the Elsevier webpage (see DOI below)
+ The basic script for tracking coordinate export is now online, as well as an exemplary R script to process the data. 
+ We will try to make the video tutorials and benchmark videos available shortly. Currently they should be available as
+ supplementary files on the Elsevier webpage (see DOI below)
