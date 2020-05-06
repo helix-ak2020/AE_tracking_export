@@ -75,7 +75,7 @@ function writeFile(fileObj, tracker) {
     //Start writing
     fileObj.open("w"); 
     //Write column names as first line
-    fileObj.writeln("x,y");
+       fileObj.writeln("x,y");
     for(i=0; i<frames; i++){
         //Write line consisting of x and y coordinate of point
         fileObj.writeln(result[j][i][0] + "," + result[j][i][1]);
