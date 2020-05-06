@@ -14,3 +14,7 @@ Update 04th May 2020:
  The basic script for tracking coordinate export is now online, as well as an exemplary R script to process the data. 
  We will try to make the video tutorials and benchmark videos available shortly. Currently they should be available as
  supplementary files on the Elsevier webpage (see DOI above)
+ 
+Update 06th May 2020:
+ A Video  tutorial on how to use motion tracking in After Effects and export coordinates with our script is now available. 
+ A detailed description of the repository content will follow shortly, for those who do not have access to our publication.
