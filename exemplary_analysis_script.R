@@ -1,5 +1,5 @@
-#First specify Working Directory
-setwd("E:/Tracking Paper/Zoology Publication/Output") #specify working directory
+#First specify your Working Directory
+setwd("C:/user/working_directory") #specify your working directory
 
 #Functions ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -7,12 +7,12 @@ setwd("E:/Tracking Paper/Zoology Publication/Output") #specify working directory
 readnumeric <- function(input_message){
   print(input_message)
   n <- readLines(con=stdin(), n=1)#readline()
-  if(!grepl("^[0-9]+(\\.[0-9]+)?$",n))
+  if(!grepl("^[0-9]+(\\.[0-9]+)?$",n)) #regular expression to read numeric value 
     {
-      print("This is not a numeric value!")
+      print("This is not a numeric value!") #if input does not match reg ex, an error is displayed
       return(readnumeric(input_message))
     }
-  return(as.numeric(n))
+  return(as.numeric(n)) #returns input as numeric
 }
 
 # Function to read text strings, requires message what data to enter and a regular expression to match as input parameter
@@ -21,85 +21,80 @@ readtext <- function(input_message,regtomatch){
   n <- readLines(con=stdin(), n=1)
   if(!grepl(regtomatch,n))
   {
-    print("Invalid entry!")
+    print("Invalid entry!") #if input does not match reg ex, an error is displayed
     return(readtext(input_message,regtomatch))
   }
-  return(as.character(n))
+  return(as.character(n)) #returns input as character string
 }
 
 #Functon to calculate euclidean distance between two successive points in a data frame. requires data frame as input, 
 #returns distance as vector
 euclidean_dist <- function(input_data) {
-  distance <- NA
+  distance <- vector() #creates empty vector to write data to
   for(i in (1:(nrow(input_data)-1))){
-    distance[i] = sqrt((input_data[i+1,1]-input_data[i,1])^2+(input_data[i+1,2]-input_data[i,2])^2)
+    #calculation of euclidean distance between points
+    distance[i] = sqrt((input_data[i+1,1]-input_data[i,1])^2+(input_data[i+1,2]-input_data[i,2])^2) 
   }
-  return(distance)
+  return(distance) #returns distance between points as a new vector
 }
 
 
-#Core Piece of the script. This Function performs a LOESS to smooth the data
-#Smoothing is controlled by the user during the process
-data_analysis <- function(input_count, input_distance) {
+#Following functions are the core Piece of the script. 
+
+#Function making a loess prediction, which is later fed into optimization function in data analysis
+#requires a span value (the parameter to be optimised and an input data frame), 
+#comes with plotting included and returns resdiual sum of squares! 
+model_fun <- function(current_span, input_df) {
+  print("Current Span:") 
+  print(current_span) #Print the span value passed by optimization function
   
-  track_accept <- F
-  current_span <- 1
-  input_df <- data.frame(input_count, input_distance)
-  
-  while (track_accept==F) {
-    plot(input_count, input_distance, xlab="Time[s]", ylab="Travelled Distance[m]", pch=3, cex=0.5)
-    print("Original data is plotted in black")
-    #Plot the last prediction if it exists
-    if(exists("current_prediction")==T) {
-      points(input_count, current_prediction, col="steelblue2", pch=1, cex=0.7)
-      print("Last smoothing attempt, plotted in light blue")
-    }
-    #Make LOESS prediction
-    current_model <- loess(input_distance ~ input_count, data=input_df, span=current_span)
-    current_prediction <- predict(current_model)
+  current_model <- try(loess(input_distance ~ input_time_axis, data=input_df, span=current_span)) #try to generate loess model
+  if(class(current_model)!="try-error"){
+    current_prediction <- predict(current_model) #if successful make prediction and plot it
     #Plot new prediction
-    points(count,current_prediction, col="blue", pch=8, cex=0.5)
-    print("New smoothing attempt, plotted in blue")
-    #print(current_model$residuals)
-    print(summary(current_prediction))
-    
-    #Function to calculate Sum of Squared Errors (SSE), requires Model to calculate
-    #residuals from and returns SSE
-    calculate_SSE <- function(x){
-      loessMod <- try(loess(input_distance ~ input_count, data=input_df, span=x), silent=T)
-      res <- try(loessMod$residuals, silent=T)
-      if(class(res)!="try-error"){
-        if((sum(res, na.rm=T) > 0)){
-          sse <- sum(res^2)  
-        }
-      }else{
-        sse <- 99999
-      }
-      return(sse)
-    }
-    sse <- calculate_SSE(current_span)
-    ssenam <- paste("Current Sum of Squares Error (SSE)=", sse, sep="")
-    print(ssenam)
-    
-    #Asking for veryfication
-    match_message <- "Does this curve match your data? Type 'YES' or 'NO'"
-    match_reg <- "^(YES)|(NO)$"
-    input_var<-readtext(match_message,match_reg)
-    #Asking the User to set a new span value
-    if (input_var == "YES") {
-      track_accept=T
-    } else {
-    span_info <- paste("Current span value", current_span, sep=" ")
-    print(span_info)
-    span_message <- "Enter a new span value. Decreasing the span value increases accuracy"
-    current_span <- readnumeric(span_message)
-    }
-    
+    lines(input_df$input_time_axis,current_prediction, lty=3, col="lightskyblue") #plot prediction (by adding to empty plot generated in "data analysis")
   }
-
-  #creating derivatives of the curve
-  return(current_prediction)
+  res <- try(current_model$residuals, silent=T) # calculating residudals of current prediction
+  if(class(res)!="try-error"){
+    if((sum(res^2, na.rm=T) > 0)){
+      sse <- sum(res^2)  #calculate Residual Sum of Squares
+    }else{
+      print("SSE_reset")
+      sse <- 999999999 #If calculation is not succesful set it to a ridicolusly high value so optim discards invalid solutions
+    }
+  } else {
+    print("try_error")
+    return(999999999) #also catching errors and sets SSE ridicolusly high
+  }
+  print("SSE:") 
+  print(sse) # prints SSE value to console
+  print("---------------") #spacer for console
+  return(sse) #Function returns SSE
 }
+
+#incorporates the previous model function and minimizes SSE using general optimization. 
+#requires time-distance data as seperate vectors. returns loess prediction.
+data_analysis <- function(input_time_axis, input_distance) {
+  
+  input_data <- data.frame(input_time_axis, input_distance) # load input data frame
+  
+  plot(input_time_axis, input_distance, xlab="Time[s]", ylab="Travelled Distance[m]", pch=3, cex=0.5) #open clean plot to later fill fits in
+  print("Original data is plotted in black") 
+  print("Fitting attempts are plotted in blue")
+  
+  #Make LOESS prediction
+  #Uses optim to minimize SSE of model Fun LOESS function using "Brent" method
+  opt_output <- optim(par=1, lower=0.01, upper=1, fn=model_fun, input_df=input_data, method = "Brent")
+  print(opt_output) # Print summary of optimization
+  opt_model <- loess(input_distance ~ input_time_axis, data=input_data, span=opt_output$par) #generate lin. Model using Par. from Optimization
+  final_prediction <- predict(opt_model)#Make prediction
+  lines(input_data$input_time_axis,final_prediction, col="olivedrab", lwd=2) # Plot prediction
+  
+  print("Final fit is plotted in green")
+  return(final_prediction) #returns final prediction
+  
+}
+
 
 #Function calculating first and second derivative
 deriv_analysis <- function(input_dataX, input_dataY) {
@@ -107,29 +102,38 @@ deriv_analysis <- function(input_dataX, input_dataY) {
   match_reg <- "^(YES)|(NO)$"
   deriv_YN <- readtext(input_message_deriv, match_reg)
   if (deriv_YN=="YES") {
+    #Calculate Velocity as first derivative of travelled_distance
     velocity <- diff(input_dataY)/diff(input_dataX)
-    acceleration <- diff(velocity)/diff(input_dataX[1:length(velocity)])
+    #Calculate acceleration as first derivative of velocity
+    acceleration <- diff(velocity)/diff(input_dataX[1:length(velocity)]) 
+    
+    #Printing maxima and plotting data
     maxIP <- max(input_dataY)
     maxV <- max(velocity)
     maxA <- max(acceleration)
-    plot(input_dataX, input_dataY, col="blue")
+    plot(input_dataX, input_dataY, col="blue", xlab= "time", ylab="parameters")
     scale_factorV <- (maxIP/maxV)
     scale_factorA <- (maxIP/maxA)
-    print(length(velocity))
-    print(length(acceleration))
+    print("-------------------------")
+    print("max. acceleration [m/s^2] (imprecise):")
     print(maxA)
+    print("max. velocity [m/s] (imprecise):")
     print(maxV)
+    print("mean. acceleration [m/s^2]:")
     print(mean(acceleration))
+    
     points(input_dataX[1:length(velocity)], (velocity*scale_factorV), col="orange")
     points(input_dataX[1:length(acceleration)], (acceleration*scale_factorA), col="black")
+    
+    #Building data frame
     finished_df=data.frame(input_dataX[1:length(acceleration)],input_dataY[1:length(acceleration)],velocity[1:length(acceleration)],acceleration)
-    colnames(finished_df)=c("time [s]","travelled distance [m]","velocity [m/s]","acceleration [m/s^2]")
-  }else {
-    finished_df=data.frame(count,input_dataY)
+    colnames(finished_df)=c("time","travelled_distance","velocity","acceleration")
+    
+    
+  } else {finished_df=data.frame(input_dataX,input_dataY)
     colnames=c("time [s]","travelled distance [m]")
-    }
-
-  return(finished_df)
+  }
+  return(finished_df) #return finished DF
 }
 
 #Function to save the File
@@ -189,7 +193,7 @@ point_distance <- euclidean_dist(lDat) #Calculate euclidean distance between ind
 #Calculate the timestep and an a vector which adds a timestamp to every obtained value
 timesc <- seq(0,(nrow(lDat)*1/framerate), 1/framerate)
 cCTR <- seq(1, (nrow(lDat)-1), 1)
-count <- timesc[cCTR]
+time_axis <- timesc[cCTR]
 
 #Reconstruct travelled distance from distance between points
 travelled_distance <-0 
@@ -198,18 +202,16 @@ for (i in 2:length(point_distance)){
 }
 
 #Fitting the curve
-smooth_location <- data_analysis(count, travelled_distance) # See respective Function
+smooth_location <- data_analysis(time_axis, travelled_distance) # See respective Function
 
 #ONLY RUN SRIPT TIll HERE++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #Proceed after previous lines have been executed
 
-processed_data <- deriv_analysis(count, smooth_location) # See respective Function
-View(processed_data)
+processed_data <- deriv_analysis(time_axis, smooth_location) # See respective Function
+
 
 #ONLY RUN SRIPT TIll HERE++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #Proceed after previous lines have been executed
 
+View(processed_data) # Opens Data frame for inspection
 save_file(processed_data) #Data Save. Filename supports letters, numbers and "_"
-
-mean(processed_data$`velocity [m/s]`)
-mean(processed_data$)
