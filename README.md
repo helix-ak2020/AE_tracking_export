@@ -16,12 +16,15 @@ Update 04th May 2020:
  supplementary files on the Elsevier webpage (see DOI above)
  
 Update 06th May 2020:
+
  A Video  tutorial on how to use motion tracking in After Effects and export coordinates with our script is now available. 
  A detailed description of the repository content will follow shortly, for those who do not have access to our publication.
  
 Update 15th June 2020:
+
  Basic troubleshooting guide has been uploaded
 
 Update 16th June 2020:
+
  New analysis script uploaded to master branch. Now features automated data fitting using an optimization algorithm. 
- Original data from our publication can now be accessed in the separate "original data" branch. The master branch will be updated     continously.  
+ Original data from our publication can now be accessed in the separate "original_version" branch. The master branch will be updated     continously. 
