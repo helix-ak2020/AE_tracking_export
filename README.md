@@ -21,3 +21,7 @@ Update 06th May 2020:
  
 Update 15th June 2020:
  Basic troubleshooting guide has been uploaded
+
+Update 16th June 2020:
+ New analysis script uploaded to master branch. Now features automated data fitting using an optimization algorithm. 
+ Original data from our publication can now be accessed in the separate "original data" branch. The master branch will be updated     continously.  
