@@ -122,8 +122,8 @@ deriv_analysis <- function(input_dataX, input_dataY) {
     print("mean. acceleration [m/s^2]:")
     print(mean(acceleration))
     
-    points(input_dataX[1:length(velocity)], (velocity*scale_factorV), col="orange")
-    points(input_dataX[1:length(acceleration)], (acceleration*scale_factorA), col="black")
+    lines(input_dataX[1:length(velocity)], (velocity*scale_factorV), col="orange")
+    lines(input_dataX[1:length(acceleration)], (acceleration*scale_factorA), col="black")
     
     #Building data frame
     finished_df=data.frame(input_dataX[1:length(acceleration)],input_dataY[1:length(acceleration)],velocity[1:length(acceleration)],acceleration)
